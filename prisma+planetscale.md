@@ -10,7 +10,7 @@ Quick overview what PlanetScale promises:
 - [Branching of databases](https://docs.planetscale.com/concepts/branching) similar to git
 - [Schema management workflow](https://docs.planetscale.com/concepts/nonblocking-schema-changes)  with "deploy requets" (similar to GitHub's Pull Requests)
 
-At they same time, the [pricing model introduced by them](https://www.planetscale.com/pricing) is also quite revolutionary for a database product:
+At they same time, the [pricing model introduced by them](https://www.planetscale.com/pricing) is also quite nice for a database product:
 
 - awesome free tier (3 databases, and a _lot_ of storage, reads and writes)
 - if you exceed that, the real pricing is simple and usage based
@@ -19,23 +19,28 @@ We like to see innovation like this at Prisma, and we expect our users to be int
 
 ## How do Prisma and PlanetScale work together?
 
+TODO
+
 At Prisma we like new databases that do that - and of course jump on them and see how they work with Prisma
 
+We actually have been working on support for Vitess, the underlying MySQL variant, for quite some time, so the "MySQL compatible" of PlanetScale should also apply to our `mysql` connector in Prisma.
 
-We actually have been working on support for Vitess, the underlying MySQL variant, for quite some time, but the product Planetscale released has some properties I thought would be worth explaining.
+While the Pricing just needs to be understand, the novel features that Planetscale introduces create some challenges for us:
+... but the product Planetscale released has some properties I thought would be worth explaining.
 
+TODO
 
-While the Pricing just needs to be understand, the novel features that Planetscale introduces create some problems for us:
-
-
+Let's look at these new challenges to get Prisma and PlanetScale to work together:
 
 ### No connection string
 
-When you look at the admin UI of Planetscale, you quickly notice that they do not just provide you with a connection string to connect to your database. But you need that to connect via Prisma!?
+When you look at the admin UI of Planetscale, you quickly notice that they do not just provide you with a connection string to connect to your database (as many other database providers do). But you need that to connect to the database and configure your Prisma Schema file!?
 
-Use their CLI to create a local tunnel to your database, and then use the provided local connection string in Prisma. You can either  wrap your app into the call to the CLI (`pscale connect ...`), do so by running the CLI in the background and then starting your app in parallel. I prefer the latter, as it also allows you to use the Prisma CLI for Migrations.
+PlanetScale abstracts the connection string away for convenience and security reasons. You can use their CLI to create a local tunnel to your database hosted on PlanetScale, and then use the provided local connection string in Prisma. You can either wrap your app into the call to the CLI (e.g. `pscale connect my-database main --execute-protocol 'mysql' --execute 'yarn start'`) or do so by running the CLI in the background and then starting your app in parallel (use `mysql://root:127.0.0.1:3306/my-database` as the connection string). 
 
-Both works equally fine and after getting used to it, this is actually quite nice as you can seamlessly
+Both work equally fine, but you might prefer the latter, as it also allows you to use the Prisma CLI (e.g. for Migrations) or you will also need to wrap these calls into a `pscale` execution.
+
+After getting used to it, this is actually quite nice workflow as you can seamlessly switch between databases and branches by adapting that `pscale` command.
 
 TODO: How to do this on serverless?
 
