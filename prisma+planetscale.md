@@ -1,0 +1,95 @@
+# Prisma + Planetscale
+
+## Introduction
+
+Planetscale, new database, promises a lot
+At Prisma we like new databases that do that - and of course jump on them and see how they work with Prisma
+We actually have been working on support for Vitess, the underlying MySQL variant, for quite some time, but the product Planetscale released has some properties I thought would be worth explaining.
+But let's start why Planetscale might be interesting to you:
+
+### Features
+
+Close to instant provisioning
+Branching of databases
+Schema management workflow
+
+### Pricing
+
+awesome free tier
+pretty simple usage based pricing
+
+While the Pricing just needs to be understand, the novel features that Planetscale introduces create some problems for us:
+
+## Challenges
+
+### No connection string
+
+When you look at the admin UI of Planetscale, you quickly notice that they do not just provide you with a connection string to connect to your database. But you need that to connect via Prisma!?
+
+Use their CLI to create a local tunnel to your database, and then use the provided local connection string in Prisma. You can either  wrap your app into the call to the CLI (`pscale connect ...`), do so by running the CLI in the background and then starting your app in parallel. I prefer the latter, as it also allows you to use the Prisma CLI for Migrations.
+
+Both works equally fine and after getting used to it, this is actually quite nice as you can seamlessly
+
+TODO: How to do this on serverless?
+
+### No schema changes on the production branch
+
+Part of their branching concept is that the production branch is protected from schema changes. Carelessly changing the schema on a production database is a good way to produce downtime, and you usually should not do it - but often there is no "good" way to avoid it.
+
+### No shadow database creation
+Planetscale does not let you `CREATE DATABASE` - you should use their web UI to create additional databases, or branches on existing databases. This does not match well with Prisma's `migrate dev` that tries to create a "shadow database" to test run your migrations. 
+Just create a branch `shadow-database` via the UI and open a connection to that via `pscale connect foo shadow --port 3333` before you use any `prisma migrate` commands. Use that as the shadow database by adding `shadowDatabaseUrl = "mysql://root:@localhost:3333/foo"` to your `datasource` block. 
+
+### No foreign keys
+The second super interesting concept they apply are Non-Blocking Schema Changes. 
+
+Fortunately, the two final challenges also can be solved or worked around, until we bake in better support into Prisma itself:
+
+## Solutions
+
+Prisma currently does not have built in support for Planetscale's branching system, and also does not play well with databases that do not support foreign keys.
+
+### The branching system
+The first step here definitely is to really understand the new branch workflow. As it is a totally new thing, it took me personally a bit to realize that I could not make any schema changes on 
+This is how you do it:
+Create a branch, e.g. `foo` from your current `main`
+Connect to that branch
+The only thing you have to do manually, is to _copy over the entry from the `_prisma_migrations` table after you merged a deploy request that put the schema changes from the development branch into the production branch. 
+
+If you do not do that, you will get an error message like this:
+```
+C:\Users\Jan\Documents\throwaway\planetscale>npx prisma migrate dev
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": MySQL database "fk-test" at "127.0.0.1:3306"
+
+? Drift detected: Your database schema is not in sync with your migration history.      
+
+We need to reset the MySQL database "fk-test" at "127.0.0.1:3306".
+Do you want to continue? All data will be lost. » (y/N)
+```
+To copy over, run the follow commands
+
+TODO
+
+We are in contact with Planetscale, for them to add this to their product, so you do not have to manually do that each time.
+
+### No foreign keys
+
+The missing support for foreign keys is the bigger problem, as Prisma by default relies on them to identify and manage relations between models. Fortunately, a current quirk of Prisma comes in handy here and gives us a great workaround:
+
+Prisma creates foreign keys for all the relations in your Prisma schema. It 
+
+When you are ready to migrate your database, you switch into a new branch from Planetscale. Then you usually would run `npx prisma migrate dev` to create the migration and apply it. If you added a foreign key, this would now fail with `.... TODO error msg ...`. So instead you run `npx prisma migrate dev --create-only` which will create a new folder in `migrations` with a `migration.sql` file. Open that file and remove all the `ALTER TABLE` statements that create foreign keys. Afterwards you can deploy the modified migration with `npx prisma migrate deploy`.
+
+(Do not forget to copy over the new row from `_prisma_migrations` as described above.)
+
+
+
+## Summary
+Use branches to run `prisma migrate` commands
+TODO shadow database
+Remove foreign keys manually from the `migration.sql` generated by `prisma migrate dev --cerate-only`, then use `prisma migrate deploy` to deploy. Prisma will improve this soon by introducing a mode that does this automatically.
+Copy over content of `_prisma_migrations` manually after merging a development branch into `main`. Planetscale will improve this in their product soon.
+
+
