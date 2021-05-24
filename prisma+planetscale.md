@@ -19,18 +19,19 @@ We like to see innovation like this at Prisma, and we expect our users to be int
 
 ## How do Prisma and PlanetScale work together?
 
-TODO Rewrite, refine
+TODO Write introduction on challenges, include list with anchors to individual sections so it is easy to get overview
 
+<!--
 At Prisma we like new databases that do that - and of course jump on them and see how they work with Prisma
 
 We actually have been working on support for Vitess, the underlying MySQL variant, for quite some time, so the "MySQL compatible" of PlanetScale should also apply to our `mysql` connector in Prisma.
 
-While the Pricing just needs to be understand, the novel features that Planetscale introduces create some challenges for us:
+While the Pricing just needs to be undestdoof, the novel features that Planetscale introduces create some challenges for us:
 ... but the product Planetscale released has some properties I thought would be worth explaining.
 
-END TODO
-
 Let's look at these new challenges to get Prisma and PlanetScale to work together:
+
+-->
 
 ### No connection string
 
@@ -42,21 +43,26 @@ Both work equally fine, but you might prefer the latter, as it also allows you t
 
 After getting used to it, this is actually quite nice workflow as you can seamlessly switch between databases and branches by adapting that `pscale` command.
 
-TODO: How to do this on serverless?
+TODO: How to do this on serverless? (https://prisma.slack.com/archives/CA491RJH0/p1621835460092100?thread_ts=1621384194.012100&cid=CA491RJH0)
 
-### No schema changes on the production branch, or how PlanetScale's branching system works
+### No schema changes on the production branch, or: How PlanetScale's branching system works
 
-Part of their branching concept is that the production branch is protected from schema changes. Carelessly changing the schema on a production database is a good way to produce downtime, and you usually should not do it - but often there is no "good" way to avoid it.
+TODO Refine draft below
 
-TODO Big one #1!
+Part of PlanetScale's branching concept is that the production branch is protected from schema changes. Carelessly changing the schema on a production database is a good way to produce downtime, and you usually should not do it - but often there is no "good" way to avoid it. PlanetScale offers that with their branching system.
 
 Prisma currently does not have built in support for Planetscale's branching system, but it is easy to use if you first understood it and follow the same steps each time:
 
-The first step here definitely is to really understand the new branch workflow. As it is a totally new thing, it took me personally a bit to realize that I could not make any schema changes on 
-This is how you do it:
-Create a branch, e.g. `foo` from your current `main`
-Connect to that branch
-The only thing you have to do manually, is to _copy over the entry from the `_prisma_migrations` table after you merged a deploy request that put the schema changes from the development branch into the production branch. 
+The first step here definitely is to really understand the new branch workflow. As it is a totally new thing, it took me personally a bit to realize that I could not make any schema changes on `main` and I would get the following error message instead:
+```
+TODO
+```
+
+This is how you work with their branching system instead:
+1. Create a branch, e.g. `foo` from your current `main`
+2. Connect to that branch
+3. Run `prisma migrate` there
+4. The only thing you have to do manually, is to copy over the entry from the `_prisma_migrations` table after you merged a deploy request that put the schema changes from the development branch into the production branch. 
 
 If you do not do that, you will get an error message like this:
 ```
@@ -72,11 +78,11 @@ Do you want to continue? All data will be lost. » (y/N)
 ```
 To copy over, run the follow commands
 
+```
 TODO
+```
 
 We are in contact with Planetscale, for them to add this to their product, so you do not have to manually do that each time.
-
-TODO
 
 ### No shadow database creation
 
@@ -90,28 +96,24 @@ TODO: Confirm this _really_ works as described.
 
 ### No foreign keys
 
-The second super interesting concept they apply are Non-Blocking Schema Changes. 
-Do not support foreign keys for that
-Reasoning: http://code.openark.org/blog/mysql/the-problem-with-mysql-foreign-key-constraints-in-online-schema-changes
-Prisma does not play well with databases that do not support foreign keys.
+TODO Refine draft below
 
-
-TODO Big one #2!
+- The second super interesting concept they apply are Non-Blocking Schema Changes. 
+- Do not support foreign keys for that
+- Reasoning: http://code.openark.org/blog/mysql/the-problem-with-mysql-foreign-key-constraints-in-online-schema-changes
+- Prisma Migrate does not play well with databases that do not support foreign keys.
 
 The missing support for foreign keys is the bigger problem, as Prisma by default relies on them to identify and manage relations between models. Fortunately, a current quirk of Prisma comes in handy here and gives us a great workaround:
 
-Prisma creates foreign keys for all the relations in your Prisma schema. It 
+Prisma creates foreign keys for all the relations in your Prisma schema.
 
 When you are ready to migrate your database, you switch into a new branch from Planetscale. Then you usually would run `npx prisma migrate dev` to create the migration and apply it. If you added a foreign key, this would now fail with `.... TODO error msg ...`. So instead you run `npx prisma migrate dev --create-only` which will create a new folder in `migrations` with a `migration.sql` file. Open that file and remove all the `ALTER TABLE` statements that create foreign keys. Afterwards you can deploy the modified migration with `npx prisma migrate deploy`.
 
 Note: Any future `prisma migrate dev` will try to create these foreign keys again, so you need to be vigilant in removing these or applying your migration file will fail.
 
-(Do not forget to copy over the new row from `_prisma_migrations` as described above.)
+(Do not forget to copy over the new row from `_prisma_migrations` as described above as well to ensure `migrate dev` knows about the already applied migrations.)
 
 Prisma will probably introduct a special mode to support this better.
-
-TODO
-
 
 
 ## Summary
