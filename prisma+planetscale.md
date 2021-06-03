@@ -1,5 +1,29 @@
 # Prisma + PlanetScale
 
+
+
+
+
+
+
+
+
+
+Much better version of this at [https://github.com/prisma/prisma/issues/7292](https://github.com/prisma/prisma/issues/7292)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## PlanetScale?
 
 [PlanetScale](https://planetscale.com) recently launched as "the database for developers" and made quite a splash on [Hacker News](https://news.ycombinator.com/item?id=27197873) and [ProductHunt](https://www.producthunt.com/posts/planetscale). Their name obviously is a play on the term "web scale", that describes the scale that big companies like Google, Amazon or Facebook achieve - so quite a claim and promise to live up to.
